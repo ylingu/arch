@@ -41,15 +41,21 @@ echo "User '$USERNAME' will be created."
 echo
 
 # --- Step 1: Pacman and System Update ---
-echo ">>> [1/6] Initializing Pacman keyring and updating the system..."
+echo ">>> [1/8] Initializing Pacman keyring and updating the system..."
 pacman-key --init
 pacman-key --populate archlinux
 pacman -Syu --noconfirm
 echo "System update complete."
 echo
 
-# --- Step 2: System Configuration (Timezone, Locale, Hostname) ---
-echo ">>> [2/6] Configuring system timezone, locale, and hostname..."
+# --- Step 2: Set Root Password ---
+echo ">>> [2/8] Setting password for the root user..."
+passwd
+echo "Root password set."
+echo
+
+# --- Step 3: System Configuration (Timezone, Locale, Hostname) ---
+echo ">>> [3/8] Configuring system timezone, locale, and hostname..."
 # Set Timezone
 ln -sf "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime
 
@@ -64,15 +70,26 @@ echo "$HOSTNAME" > /etc/hostname
 echo "System configured."
 echo
 
-# --- Step 3: Install Essential Packages ---
-echo ">>> [3/6] Installing essential packages (sudo, git, neovim...)"
+# --- Step 4: Create WSL Locale Fix Script ---
+echo ">>> [4/8] Creating WSL locale fix script..."
+cat <<'EOF' > /etc/profile.d/wsl_locale_fix.sh
+# This script forces the locale to zh_CN.UTF-8 on shell startup,
+# overriding the value that WSL incorrectly sets from the Windows host.
+export LANG="zh_CN.UTF-8"
+EOF
+chmod +x /etc/profile.d/wsl_locale_fix.sh
+echo "WSL locale fix script created."
+echo
+
+# --- Step 5: Install Essential Packages ---
+echo ">>> [5/8] Installing essential packages (sudo, git, neovim...)"
 # --needed prevents re-installing packages that are already up-to-date.
 pacman -S --noconfirm --needed sudo git neovim
 echo "Packages installed."
 echo
 
-# --- Step 4: Create User and Configure Sudo ---
-echo ">>> [4/6] Creating user '$USERNAME' and configuring sudo access..."
+# --- Step 6: Create User and Configure Sudo ---
+echo ">>> [6/8] Creating user '$USERNAME' and configuring sudo access..."
 # Create the user with a home directory (-m), add to wheel group (-G)
 useradd -m -G wheel -s /bin/bash "$USERNAME"
 
@@ -86,8 +103,8 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 echo "User '$USERNAME' created and granted sudo rights."
 echo
 
-# --- Step 5: Configure WSL for Systemd ---
-echo ">>> [5/6] Enabling systemd for WSL..."
+# --- Step 7: Configure WSL for Systemd ---
+echo ">>> [7/8] Enabling systemd for WSL..."
 # This allows services like Docker or sshd to run correctly.
 cat <<EOF > /etc/wsl.conf
 [boot]
@@ -99,8 +116,8 @@ EOF
 echo "WSL configuration for systemd created."
 echo
 
-# --- Step 6: Final Instructions ---
-echo ">>> [6/6] Finalizing..."
+# --- Step 8: Final Instructions ---
+echo ">>> [8/8] Finalizing..."
 echo
 echo "================================================================="
 echo "✅  Arch WSL initialization is complete!"
